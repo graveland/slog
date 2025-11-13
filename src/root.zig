@@ -67,7 +67,7 @@ pub const Options = struct {
 };
 
 /// Returns a root logger.
-pub fn initRootLogger(alloc: std.mem.Allocator, options: Options) !*Logger {
+pub fn initRootLogger(alloc: std.mem.Allocator, io: std.Io, options: Options) !*Logger {
     var spec = switch (options.log_spec) {
         .from_default_envvar => try LogLevelSpec.initFromEnvvar("ZIG_LOG", alloc),
         .from_envvar => |envvar| try LogLevelSpec.initFromEnvvar(envvar, alloc),
@@ -106,7 +106,7 @@ pub fn initRootLogger(alloc: std.mem.Allocator, options: Options) !*Logger {
         .output = output,
         .formatter = frm,
     };
-    return Logger.init(options.root_logger_name, spec, log_handler, alloc);
+    return Logger.init(options.root_logger_name, spec, log_handler, alloc, io);
 }
 
 comptime {

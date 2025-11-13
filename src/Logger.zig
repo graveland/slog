@@ -19,6 +19,7 @@ const Self = @This();
 
 name: ?[]const u8,
 allocator: std.mem.Allocator,
+io: std.Io,
 constant_fields: ?[]Field = null,
 dispatcher: EventDispatcher,
 parent: ?*Self,
@@ -26,12 +27,12 @@ kids: std.ArrayList(*Self),
 
 timezone: *TimeZone,
 
-pub fn init(name: ?[]const u8, spec: LogLevelSpec, handler: *LogHandler, alloc: Allocator) !*Self {
+pub fn init(name: ?[]const u8, spec: LogLevelSpec, handler: *LogHandler, alloc: Allocator, io: std.Io) !*Self {
     var spec_node = spec.root;
     const self = try alloc.create(Self);
 
     const tz = try alloc.create(TimeZone);
-    tz.* = try zeit.local(alloc, null);
+    tz.* = try zeit.local(alloc, io, null);
 
     if (name) |root_name| {
         var name_chunk_it = std.mem.splitScalar(u8, root_name, '.');
@@ -50,6 +51,7 @@ pub fn init(name: ?[]const u8, spec: LogLevelSpec, handler: *LogHandler, alloc: 
     self.* = .{
         .name = if (name) |n| try alloc.dupe(u8, n) else null,
         .allocator = alloc,
+        .io = io,
         .dispatcher = EventDispatcher{
             .handler = handler,
             .spec = spec_node,
@@ -119,6 +121,7 @@ pub fn initChildLogger(self: *Self, name: []const u8) !*Self {
     kid.* = Self{
         .name = lname,
         .allocator = self.allocator,
+        .io = self.io,
         .constant_fields = self.constant_fields,
         .dispatcher = self.dispatcher.createChildDispatcher(name),
         .parent = self,
@@ -165,7 +168,7 @@ pub fn err(self: *Self, message: []const u8, fields: anytype) void {
 fn log(self: *Self, level: Level, message: []const u8, fields: anytype) !void {
     // TODO: consider to get rid of the LogEvent to avoid unnecessary memory allocation.
     var event = LogEvent{
-        .timestamp = try zeit.instant(.{ .source = .now, .timezone = self.timezone }),
+        .timestamp = try zeit.instant(.{ .io = self.io, .source = .now, .timezone = self.timezone }),
         .logger_name = self.name,
         .level = level,
         .message = message,
@@ -213,8 +216,7 @@ fn toPlainValue(value: anytype) Value {
             }
             @compileError(std.fmt.comptimePrint("unsupported pointer type: {any}", .{field_type}));
         },
-        .int, .comptime_int => Value{ .integer = @as(i64, value) },
-        .float, .comptime_float => Value{ .float = @as(f64, value) },
+        .int, .comptime_int => Value{ .integer = @intCast(value) },
         .bool => Value{ .bool = value },
         .null => Value.null,
         else => {
