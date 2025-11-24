@@ -168,6 +168,38 @@ pub fn err(self: *Self, message: []const u8, fields: anytype) void {
     return self.log(Level.@"error", message, fields) catch return;
 }
 
+pub fn tracef(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    return self.logf(Level.trace, fmt, args) catch return;
+}
+
+pub fn debugf(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    return self.logf(Level.debug, fmt, args) catch return;
+}
+
+pub fn infof(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    return self.logf(Level.info, fmt, args) catch return;
+}
+
+pub fn warnf(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    return self.logf(Level.warn, fmt, args) catch return;
+}
+
+pub fn errf(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    return self.logf(Level.@"error", fmt, args) catch return;
+}
+
+fn logf(self: *Self, level: Level, comptime fmt: []const u8, args: anytype) !void {
+    var buf: [4096]u8 = undefined;
+    const message = std.fmt.bufPrint(&buf, fmt, args) catch |e| switch (e) {
+        error.NoSpaceLeft => blk: {
+            const truncated = "(message truncated) ";
+            @memcpy(buf[buf.len - truncated.len ..], truncated);
+            break :blk &buf;
+        },
+    };
+    return self.log(level, message, .{});
+}
+
 fn log(self: *Self, level: Level, message: []const u8, fields: anytype) !void {
     // TODO: consider to get rid of the LogEvent to avoid unnecessary memory allocation.
     var event = LogEvent{
@@ -220,6 +252,7 @@ fn toPlainValue(value: anytype) Value {
             @compileError(std.fmt.comptimePrint("unsupported pointer type: {any}", .{field_type}));
         },
         .int, .comptime_int => Value{ .integer = @intCast(value) },
+        .float, .comptime_float => Value{ .float = @floatCast(value) },
         .bool => Value{ .bool = value },
         .null => Value.null,
         else => {

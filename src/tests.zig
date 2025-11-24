@@ -9,16 +9,21 @@ const testing = std.testing;
 const TestingLogger = struct {
     allocating: *Writer.Allocating,
     logger: *Logger,
+    threaded: std.Io.Threaded,
 
     fn init(options: Options) !TestingLogger {
         var al = try testing.allocator.create(Writer.Allocating);
         al.* = Writer.Allocating.init(testing.allocator);
 
+        var threaded = std.Io.Threaded.init(testing.allocator);
+        const io = threaded.io();
+
         var opt = options;
         opt.output = .{ .writer = &al.writer };
         return .{
             .allocating = al,
-            .logger = try initRootLogger(testing.allocator, opt),
+            .logger = try initRootLogger(testing.allocator, io, opt),
+            .threaded = threaded,
         };
     }
 
@@ -26,6 +31,7 @@ const TestingLogger = struct {
         const al = self.allocating.allocator;
         self.allocating.deinit();
         self.logger.deinit();
+        self.threaded.deinit();
         al.destroy(self.allocating);
     }
 
@@ -151,4 +157,23 @@ test "logger with dots in name: child logger" {
     log3.debug("text4", .{});
     try tl.hasPattern("text3");
     try tl.hasPattern("text4");
+}
+
+test "formatted logging functions" {
+    var tl = try TestingLogger.init(.{
+        .log_spec = SpecSource{ .from_string = "trace" },
+    });
+    defer tl.deinit();
+
+    tl.logger.tracef("Trace: value={d}", .{123});
+    tl.logger.debugf("Debug: {s} count={d}", .{ "test", 42 });
+    tl.logger.infof("Info: {s}", .{"formatted message"});
+    tl.logger.warnf("Warning: position={d}", .{10});
+    tl.logger.errf("Error: {s} at line {d}", .{ "syntax error", 25 });
+
+    try tl.hasPattern("Trace: value=123");
+    try tl.hasPattern("Debug: test count=42");
+    try tl.hasPattern("Info: formatted message");
+    try tl.hasPattern("Warning: position=10");
+    try tl.hasPattern("Error: syntax error at line 25");
 }

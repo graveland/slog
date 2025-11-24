@@ -2,7 +2,11 @@ const std = @import("std");
 const slog = @import("slog");
 
 pub fn main() !void {
-    var log = try slog.initRootLogger(std.heap.page_allocator, .{});
+    var threaded = std.Io.Threaded.init(std.heap.page_allocator);
+    defer threaded.deinit();
+    const io = threaded.io();
+
+    var log = try slog.initRootLogger(std.heap.page_allocator, io, .{});
     defer log.deinit();
 
     var log2 = try log.initChildLogger("mod1");
@@ -17,7 +21,12 @@ pub fn main() !void {
     log3.err("Hello slog!", .{ .field1 = "value1", .field2 = "value6", .rate = 30, .active = true, .metadata = null });
     log4.err("Hello slog!", .{ .field1 = "value1", .field2 = "value6", .rate = 30, .active = true, .metadata = null });
 
-    var jlog = try slog.initRootLogger(std.heap.page_allocator, .{ .formatter = .json });
+    // Test formatted logging
+    log.infof("Formatted: count={d}, name={s}", .{ 42, "test" });
+    log2.debugf("Debug formatted: value={d}", .{123});
+    log3.warnf("Warning: {s} at position {d}", .{ "error", 10 });
+
+    var jlog = try slog.initRootLogger(std.heap.page_allocator, io, .{ .formatter = .json });
     jlog.info("Hello slog!", .{ .field1 = "value1", .field2 = "value1", .rate = 30 });
     defer jlog.deinit();
 }
