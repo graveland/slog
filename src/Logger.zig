@@ -65,6 +65,9 @@ pub fn init(name: ?[]const u8, spec: LogLevelSpec, handler: *LogHandler, alloc: 
 }
 
 pub fn deinit(self: *Self) void {
+    // Clear parent pointers before iterating to prevent kids from trying to
+    // remove themselves from our list during cleanup (iterator invalidation)
+    for (self.kids.items) |kid| kid.parent = null;
     for (self.kids.items) |kid| kid.deinit();
     self.kids.deinit(self.allocator);
 
