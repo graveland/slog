@@ -25,6 +25,7 @@ dispatcher: EventDispatcher,
 parent: ?*Self,
 kids: std.ArrayList(*Self),
 kids_mutex: std.Thread.Mutex = .{},
+is_root: bool,
 
 timezone: *TimeZone,
 
@@ -60,6 +61,7 @@ pub fn init(name: ?[]const u8, spec: LogLevelSpec, handler: *LogHandler, alloc: 
         },
         .parent = null,
         .kids = std.ArrayList(*Self).empty,
+        .is_root = true,
         .timezone = tz,
     };
     return self;
@@ -87,7 +89,9 @@ pub fn deinit(self: *Self) void {
     if (self.name) |name| self.allocator.free(name);
     if (self.parent) |parent| {
         parent.removeKid(self);
-    } else {
+    }
+    // Only root logger owns and frees shared resources
+    if (self.is_root) {
         self.timezone.deinit();
         self.allocator.destroy(self.timezone);
 
@@ -133,6 +137,7 @@ pub fn initChildLogger(self: *Self, name: []const u8) !*Self {
         .dispatcher = self.dispatcher.createChildDispatcher(name),
         .parent = self,
         .kids = std.ArrayList(*Self).empty,
+        .is_root = false,
         .timezone = self.timezone,
     };
     self.kids_mutex.lock();
