@@ -24,6 +24,7 @@ constant_fields: ?[]Field = null,
 dispatcher: EventDispatcher,
 parent: ?*Self,
 kids: std.ArrayList(*Self),
+kids_mutex: std.Thread.Mutex = .{},
 
 timezone: *TimeZone,
 
@@ -66,8 +67,11 @@ pub fn init(name: ?[]const u8, spec: LogLevelSpec, handler: *LogHandler, alloc: 
 
 pub fn deinit(self: *Self) void {
     // Clear parent pointers before iterating to prevent kids from trying to
-    // remove themselves from our list during cleanup (iterator invalidation)
+    // remove themselves from our list during cleanup (iterator invalidation).
+    // Hold the lock while clearing parent pointers to prevent races with initChildLogger.
+    self.kids_mutex.lock();
     for (self.kids.items) |kid| kid.parent = null;
+    self.kids_mutex.unlock();
     for (self.kids.items) |kid| kid.deinit();
     self.kids.deinit(self.allocator);
 
@@ -131,11 +135,15 @@ pub fn initChildLogger(self: *Self, name: []const u8) !*Self {
         .kids = std.ArrayList(*Self).empty,
         .timezone = self.timezone,
     };
+    self.kids_mutex.lock();
+    defer self.kids_mutex.unlock();
     try self.kids.append(self.allocator, kid);
     return kid;
 }
 
 fn removeKid(self: *Self, kid_ptr: *const Self) void {
+    self.kids_mutex.lock();
+    defer self.kids_mutex.unlock();
     var kids_index: ?usize = null;
     for (self.kids.items, 0..) |kid, ix| {
         if (kid == kid_ptr) {
