@@ -46,10 +46,11 @@ pub const Value = union(enum) {
 };
 
 pub const LogEvent = struct {
+    // Fields ordered by size for optimal packing
     timestamp: zeit.Instant,
-    logger_name: ?[]const u8,
-    level: Level,
+    fields: []Field,
     message: []const u8,
     constant_fields: ?[]const Field,
-    fields: []Field,
+    logger_name: ?[]const u8,
+    level: Level,
 };
