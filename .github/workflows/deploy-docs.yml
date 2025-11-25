@@ -6,6 +6,7 @@ on:
       - completed
     branches:
       - main
+      - local
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
