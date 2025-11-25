@@ -1,5 +1,5 @@
 # Structured Logging for Zig
-[![Zig Docs](https://img.shields.io/badge/docs-zig-%23f7a41d)](https://sam701.github.io/slog)
+[![Zig Docs](https://img.shields.io/badge/docs-zig-%23f7a41d)](https://graveland.github.io/slog)
 
 `slog` is a configurable, structured logging package for Zig with support for hierarchical loggers.
 ![img](./doc/log-output.png)
@@ -7,7 +7,7 @@
 ## Usage
 Add `slog` to your `build.zig.zon`
 ```
-zig fetch --save git+https://github.com/sam701/slog
+zig fetch --save git+https://github.com/graveland/slog
 ```
 
 Example code:
