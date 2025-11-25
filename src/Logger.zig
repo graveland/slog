@@ -229,8 +229,6 @@ fn log(self: *Self, level: Level, message: []const u8, fields: anytype) !void {
 }
 
 fn toFieldList(fields: anytype, alloc: Allocator) ![]Field {
-    var field_list = std.ArrayList(Field).empty;
-
     const FieldsType = @TypeOf(fields);
     const ti = @typeInfo(FieldsType);
     if (ti != .@"struct") {
@@ -238,7 +236,16 @@ fn toFieldList(fields: anytype, alloc: Allocator) ![]Field {
     }
 
     const ff = ti.@"struct".fields;
-    inline for (ff) |field| {
+
+    // Early return for empty structs - no allocation needed
+    if (ff.len == 0) {
+        return &[0]Field{};
+    }
+
+    // Use comptime-sized stack array - ff.len is known at compile time
+    var stack_fields: [ff.len]Field = undefined;
+
+    inline for (ff, 0..) |field, i| {
         const field_type = @typeInfo(field.type);
         const field_val = @field(fields, field.name);
         const value: Value = switch (field_type) {
@@ -248,10 +255,10 @@ fn toFieldList(fields: anytype, alloc: Allocator) ![]Field {
                 @compileError(std.fmt.comptimePrint("unsupported type: {any}", .{field_type}));
             },
         };
-        try field_list.append(alloc, Field{ .name = field.name, .value = value });
+        stack_fields[i] = Field{ .name = field.name, .value = value };
     }
 
-    return field_list.toOwnedSlice(alloc);
+    return try alloc.dupe(Field, stack_fields[0..ff.len]);
 }
 
 fn toPlainValue(value: anytype) Value {
