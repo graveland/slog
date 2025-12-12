@@ -30,6 +30,7 @@ pub const Value = union(enum) {
     null,
     bool: bool,
     integer: i64,
+    uinteger: u64,
     float: f64,
     string: []const u8,
 
@@ -38,8 +39,8 @@ pub const Value = union(enum) {
             .null => try w.writeAll("null"),
             .bool => |x| try w.print("{}", .{x}),
             .integer => |x| try w.print("{d}", .{x}),
+            .uinteger => |x| try w.print("{d}", .{x}),
             .float => |x| try w.print("{d:.10}", .{x}),
-            // .string => |x| try std.fmt.format(w, "\"{s}\"", .{x}),
             .string => |x| try std.json.Stringify.encodeJsonString(x, .{}, w),
         }
     }

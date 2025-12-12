@@ -249,8 +249,8 @@ fn toFieldList(fields: anytype, alloc: Allocator) ![]Field {
         const field_type = @typeInfo(field.type);
         const field_val = @field(fields, field.name);
         const value: Value = switch (field_type) {
-            .pointer, .int, .comptime_int, .float, .comptime_float, .bool, .null => toPlainValue(field_val),
-            .optional => if (field_val) |val| toPlainValue(val) else Value.null,
+            .pointer, .int, .comptime_int, .float, .comptime_float, .bool, .null => try toPlainValue(field_val, alloc),
+            .optional => if (field_val) |val| try toPlainValue(val, alloc) else Value.null,
             else => {
                 @compileError(std.fmt.comptimePrint("unsupported type: {any}", .{field_type}));
             },
@@ -261,7 +261,7 @@ fn toFieldList(fields: anytype, alloc: Allocator) ![]Field {
     return try alloc.dupe(Field, stack_fields[0..ff.len]);
 }
 
-fn toPlainValue(value: anytype) Value {
+fn toPlainValue(value: anytype, alloc: std.mem.Allocator) std.mem.Allocator.Error!Value {
     const field_type = @typeInfo(@TypeOf(value));
     return val: switch (field_type) {
         .pointer => |pti| {
@@ -271,7 +271,14 @@ fn toPlainValue(value: anytype) Value {
             }
             @compileError(std.fmt.comptimePrint("unsupported pointer type: {any}", .{field_type}));
         },
-        .int, .comptime_int => Value{ .integer = @intCast(value) },
+        .int => |int_info| if (int_info.bits > 64) {
+            break :val Value{ .string = try std.fmt.allocPrint(alloc, "{d}", .{value}) };
+        } else if (int_info.signedness == .unsigned) {
+            break :val Value{ .uinteger = @intCast(value) };
+        } else {
+            break :val Value{ .integer = @intCast(value) };
+        },
+        .comptime_int => Value{ .integer = @intCast(value) },
         .float, .comptime_float => Value{ .float = @floatCast(value) },
         .bool => Value{ .bool = value },
         .null => Value.null,
