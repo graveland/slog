@@ -1,5 +1,14 @@
 const std = @import("std");
 
+fn getVersion(b: *std.Build) []const u8 {
+    const src_dir = std.fs.path.dirname(@src().file) orelse ".";
+    var exit_code: u8 = 0;
+    const git_hash = b.runAllowFail(&[_][]const u8{
+        "git", "-C", src_dir, "rev-parse", "HEAD",
+    }, &exit_code, .Inherit) catch return "unknown";
+    return std.mem.trim(u8, git_hash, &std.ascii.whitespace);
+}
+
 /// Creates the slog module with injected dependencies.
 /// Use this when incorporating slog as a dependency to share modules with parent.
 /// The caller must provide the path to slog's src/root.zig.
@@ -17,6 +26,10 @@ pub fn createModule(
         .optimize = optimize,
     });
     slog_mod.addImport("zeit", zeit_mod);
+
+    const options = b.addOptions();
+    options.addOption([]const u8, "version", getVersion(b));
+    slog_mod.addOptions("build_options", options);
 
     return slog_mod;
 }
@@ -39,6 +52,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     lib_mod.addImport("zeit", mod_zeit);
+
+    const build_opts = b.addOptions();
+    build_opts.addOption([]const u8, "version", getVersion(b));
+    lib_mod.addOptions("build_options", build_opts);
 
     // Static library
     const lib = b.addLibrary(.{

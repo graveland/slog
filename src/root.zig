@@ -1,6 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
 const Writer = std.Io.Writer;
+const build_options = @import("build_options");
+
+pub const version = build_options.version;
 
 const formatter = @import("./formatter.zig");
 const Formatter = formatter.Formatter;
