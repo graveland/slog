@@ -214,7 +214,7 @@ fn logf(self: *Self, level: Level, comptime fmt: []const u8, args: anytype) !voi
 }
 
 fn log(self: *Self, level: Level, message: []const u8, fields: anytype) !void {
-    // TODO: consider to get rid of the LogEvent to avoid unnecessary memory allocation.
+    // Note: LogEvent is stack-allocated; only toFieldList() may allocate for user-supplied fields
     var event = LogEvent{
         .timestamp = try zeit.instant(.{ .io = self.io, .source = .now, .timezone = self.timezone }),
         .logger_name = self.name,

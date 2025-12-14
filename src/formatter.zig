@@ -264,10 +264,27 @@ const JsonPrinter = struct {
         try self.w.writeByte('\n');
     }
 
+    /// Reserved field names that are already used by the JSON output format
+    const reserved_names = [_][]const u8{ "timestamp", "level", "logger", "message" };
+
+    fn isReservedName(name: []const u8) bool {
+        for (reserved_names) |reserved| {
+            if (std.mem.eql(u8, name, reserved)) return true;
+        }
+        return false;
+    }
+
     fn writeField(w: *Writer, field: *const Field) !void {
         try w.writeByte(',');
-        // FIXME: the field name can be one of already used: timestamp, level, message
-        try writeFieldName(w, field.name);
+        // Prefix reserved field names with "_" to avoid duplicate JSON keys
+        if (isReservedName(field.name)) {
+            try w.writeByte('"');
+            try w.writeByte('_');
+            try w.writeAll(field.name);
+            try w.writeByte('"');
+        } else {
+            try writeFieldName(w, field.name);
+        }
         try w.writeByte(':');
         try field.value.write(w);
     }
