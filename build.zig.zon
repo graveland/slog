@@ -2,7 +2,7 @@
     .name = .slog,
     .version = "0.2.0",
     .fingerprint = 0x28b061b996bfa9d6, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.16.0-dev.1316+181b25ce4",
+    .minimum_zig_version = "0.16.0-dev.1634+b27bdd5af",
     .dependencies = .{
         .zeit = .{
             .url = "git+https://github.com/graveland/zeit.git#cfb5e7227d3389a66e0dbfa279c3107c17ad10f0",
