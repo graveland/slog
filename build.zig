@@ -19,6 +19,10 @@ pub fn createModule(
     zeit_mod: *std.Build.Module,
     /// Path to slog's src/root.zig (use b.path("deps/slog/src/root.zig") from parent)
     root_source_file: std.Build.LazyPath,
+    /// Minimum log level to compile. null = default (trace in Debug, info in Release).
+    min_log_level: ?[]const u8,
+    /// Show compile-time messages when log calls are filtered out.
+    log_compile_verbose: bool,
 ) *std.Build.Module {
     const slog_mod = b.addModule("slog", .{
         .root_source_file = root_source_file,
@@ -29,6 +33,8 @@ pub fn createModule(
 
     const options = b.addOptions();
     options.addOption([]const u8, "version", getVersion(b));
+    options.addOption(?[]const u8, "min_log_level", min_log_level);
+    options.addOption(bool, "log_compile_verbose", log_compile_verbose);
     slog_mod.addOptions("build_options", options);
 
     return slog_mod;
@@ -37,6 +43,18 @@ pub fn createModule(
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+
+    // Comptime log level options
+    const min_log_level = b.option(
+        []const u8,
+        "min_log_level",
+        "Minimum log level to compile (trace, debug, info, warn, error). Default: trace in Debug, info in Release.",
+    );
+    const log_compile_verbose = b.option(
+        bool,
+        "log_compile_verbose",
+        "Show compile-time messages when log calls are filtered out",
+    ) orelse false;
 
     // Fetch zeit dependency (for standalone use)
     const dep_zeit = b.dependency("zeit", .{
@@ -55,6 +73,8 @@ pub fn build(b: *std.Build) void {
 
     const build_opts = b.addOptions();
     build_opts.addOption([]const u8, "version", getVersion(b));
+    build_opts.addOption(?[]const u8, "min_log_level", min_log_level);
+    build_opts.addOption(bool, "log_compile_verbose", log_compile_verbose);
     lib_mod.addOptions("build_options", build_opts);
 
     // Static library
@@ -106,6 +126,26 @@ pub fn build(b: *std.Build) void {
 
         const run_step = b.step("run-example", "Run the example");
         run_step.dependOn(&run_cmd.step);
+    }
+
+    // Benchmark for comptime log level filtering
+    {
+        const bench_mod = b.createModule(.{
+            .root_source_file = b.path("src/bench.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        bench_mod.addImport("zeit", mod_zeit);
+        bench_mod.addOptions("build_options", build_opts);
+        const bench_exe = b.addExecutable(.{
+            .name = "bench",
+            .root_module = bench_mod,
+        });
+        b.installArtifact(bench_exe);
+        const run_bench = b.addRunArtifact(bench_exe);
+
+        const bench_step = b.step("run-bench", "Run the comptime log level benchmark");
+        bench_step.dependOn(&run_bench.step);
     }
 
     // Docs

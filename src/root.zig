@@ -2,8 +2,13 @@ const std = @import("std");
 const testing = std.testing;
 const Writer = std.Io.Writer;
 const build_options = @import("build_options");
+const util = @import("./util.zig");
 
 pub const version = build_options.version;
+
+/// The minimum log level that will be compiled in.
+/// Logs below this level are completely eliminated at compile time.
+pub const min_log_level = util.comptimeMinLevel();
 
 const formatter = @import("./formatter.zig");
 const Formatter = formatter.Formatter;

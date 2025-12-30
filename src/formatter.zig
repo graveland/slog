@@ -323,25 +323,33 @@ const ColorPrinter = struct {
         try self.writeItemColor(.message);
         try w.writeAll(event.message);
         try self.reset();
-        try w.writeByte(' ');
 
-        for (event.fields, 0..) |field, ix| {
-            if (ix > 0) try w.writeByte(' ');
-            try self.writeItemColor(.field_name);
-            try w.print("{s}=", .{field.name});
-            try self.reset();
-            const value_type: FieldValueType = switch (field.value) {
-                .null => .null,
-                .bool => .bool,
-                .integer, .float => .number,
-                else => .string,
-            };
-            try self.writeFieldTypeColor(value_type);
-
-            try field.value.write(w);
-            try self.reset();
+        if (event.constant_fields) |cf| {
+            for (cf) |field| {
+                try w.writeByte(' ');
+                try self.writeField(&field);
+            }
+        }
+        for (event.fields) |field| {
+            try w.writeByte(' ');
+            try self.writeField(&field);
         }
         try w.writeByte('\n');
+    }
+
+    fn writeField(self: *const ColorPrinter, field: *const Field) !void {
+        try self.writeItemColor(.field_name);
+        try self.w.print("{s}=", .{field.name});
+        try self.reset();
+        const value_type: FieldValueType = switch (field.value) {
+            .null => .null,
+            .bool => .bool,
+            .integer, .uinteger, .float => .number,
+            .string, .allocated_string => .string,
+        };
+        try self.writeFieldTypeColor(value_type);
+        try field.value.write(self.w);
+        try self.reset();
     }
 
     fn writeItemColor(self: *const ColorPrinter, color_item: ColorableItem) !void {

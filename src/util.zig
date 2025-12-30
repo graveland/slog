@@ -21,6 +21,29 @@ pub const Level = enum(u3) {
     }
 };
 
+/// Returns the effective comptime minimum log level based on build options and mode.
+pub fn comptimeMinLevel() Level {
+    const build_options = @import("build_options");
+    const builtin = @import("builtin");
+
+    if (build_options.min_log_level) |level_str| {
+        return Level.parse(level_str) catch {
+            @compileError("Invalid min_log_level: " ++ level_str);
+        };
+    }
+
+    return switch (builtin.mode) {
+        .Debug => .trace,
+        .ReleaseSafe, .ReleaseFast, .ReleaseSmall => .info,
+    };
+}
+
+/// Returns true if the given level should be compiled in (not filtered out).
+pub fn levelEnabled(comptime level: Level) bool {
+    const min = comptimeMinLevel();
+    return @intFromEnum(level) >= @intFromEnum(min);
+}
+
 pub const Field = struct {
     name: []const u8,
     value: Value,
@@ -33,6 +56,8 @@ pub const Value = union(enum) {
     uinteger: u64,
     float: f64,
     string: []const u8,
+    /// String that was allocated by the logger and must be freed
+    allocated_string: []const u8,
 
     pub fn write(self: Value, w: *std.Io.Writer) !void {
         switch (self) {
@@ -41,7 +66,7 @@ pub const Value = union(enum) {
             .integer => |x| try w.print("{d}", .{x}),
             .uinteger => |x| try w.print("{d}", .{x}),
             .float => |x| try w.print("{d:.10}", .{x}),
-            .string => |x| try std.json.Stringify.encodeJsonString(x, .{}, w),
+            .string, .allocated_string => |x| try std.json.Stringify.encodeJsonString(x, .{}, w),
         }
     }
 };

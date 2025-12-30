@@ -112,6 +112,11 @@ fn deinitFields(self: *const Self, fields: []Field, free_values: bool) void {
                 else => {},
             }
         }
+        // Always free allocated_string values - these are owned by the logger
+        switch (f.value) {
+            .allocated_string => |str| self.allocator.free(str),
+            else => {},
+        }
     }
     self.allocator.free(fields);
 }
@@ -162,42 +167,82 @@ fn removeKid(self: *Self, kid_ptr: *const Self) void {
 }
 
 pub fn trace(self: *Self, message: []const u8, fields: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.trace)) {
+        @compileLog("slog: trace logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.trace)) return;
     return self.log(Level.trace, message, fields) catch return;
 }
 
 pub fn debug(self: *Self, message: []const u8, fields: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.debug)) {
+        @compileLog("slog: debug logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.debug)) return;
     return self.log(Level.debug, message, fields) catch return;
 }
 
 pub fn info(self: *Self, message: []const u8, fields: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.info)) {
+        @compileLog("slog: info logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.info)) return;
     return self.log(Level.info, message, fields) catch return;
 }
 
 pub fn warn(self: *Self, message: []const u8, fields: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.warn)) {
+        @compileLog("slog: warn logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.warn)) return;
     return self.log(Level.warn, message, fields) catch return;
 }
 
 pub fn err(self: *Self, message: []const u8, fields: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.@"error")) {
+        @compileLog("slog: error logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.@"error")) return;
     return self.log(Level.@"error", message, fields) catch return;
 }
 
 pub fn tracef(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.trace)) {
+        @compileLog("slog: tracef logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.trace)) return;
     return self.logf(Level.trace, fmt, args) catch return;
 }
 
 pub fn debugf(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.debug)) {
+        @compileLog("slog: debugf logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.debug)) return;
     return self.logf(Level.debug, fmt, args) catch return;
 }
 
 pub fn infof(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.info)) {
+        @compileLog("slog: infof logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.info)) return;
     return self.logf(Level.info, fmt, args) catch return;
 }
 
 pub fn warnf(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.warn)) {
+        @compileLog("slog: warnf logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.warn)) return;
     return self.logf(Level.warn, fmt, args) catch return;
 }
 
 pub fn errf(self: *Self, comptime fmt: []const u8, args: anytype) void {
+    comptime if (@import("build_options").log_compile_verbose and !util.levelEnabled(.@"error")) {
+        @compileLog("slog: errf logs compiled out");
+    };
+    if (comptime !util.levelEnabled(.@"error")) return;
     return self.logf(Level.@"error", fmt, args) catch return;
 }
 
@@ -272,7 +317,7 @@ fn toPlainValue(value: anytype, alloc: std.mem.Allocator) std.mem.Allocator.Erro
             @compileError(std.fmt.comptimePrint("unsupported pointer type: {any}", .{field_type}));
         },
         .int => |int_info| if (int_info.bits > 64) {
-            break :val Value{ .string = try std.fmt.allocPrint(alloc, "{d}", .{value}) };
+            break :val Value{ .allocated_string = try std.fmt.allocPrint(alloc, "{d}", .{value}) };
         } else if (int_info.signedness == .unsigned) {
             break :val Value{ .uinteger = @intCast(value) };
         } else {

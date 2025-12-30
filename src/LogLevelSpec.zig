@@ -71,6 +71,7 @@ fn parseChunk(text: []const u8, alloc: Allocator) !?ParseChunkResult {
     if (text.len == 0) return null;
 
     var path_ar = std.ArrayList([]const u8).empty;
+    errdefer path_ar.deinit(alloc);
 
     var start: usize = 0;
     var ix: usize = 0;
