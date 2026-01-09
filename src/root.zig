@@ -1,7 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 const Writer = std.Io.Writer;
-const build_options = @import("build_options");
+pub const build_options = @import("build_options");
 const util = @import("./util.zig");
 
 pub const version = build_options.version;
