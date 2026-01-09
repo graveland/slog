@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.16.0-dev.1634+b27bdd5af",
     .dependencies = .{
         .zeit = .{
-            .url = "git+https://github.com/graveland/zeit.git#cfb5e7227d3389a66e0dbfa279c3107c17ad10f0",
-            .hash = "zeit-0.6.0-5I6bk9x_AgA6xJ6Zq2EnI7RBjmsiujChuIsCQOMTH1Nk",
+            .url = "git+https://github.com/graveland/zeit.git#ec3a1f741b76446e380a078c5b8bc966ff3846e0",
+            .hash = "zeit-0.7.0-n3SAEe4HAwCKQrqcT92x5f9FAGCQ_hBdA-itvQNt-6KI",
         },
     },
     .paths = .{
