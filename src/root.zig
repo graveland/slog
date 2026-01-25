@@ -83,7 +83,7 @@ pub fn initRootLogger(alloc: std.mem.Allocator, io: std.Io, options: Options) !*
     };
     errdefer spec.deinit();
 
-    const output = options.output orelse Output{ .file = std.fs.File.stderr() };
+    const output = options.output orelse Output{ .file = std.Io.File.stderr() };
     const frm = switch (options.formatter) {
         .text => f: {
             const use_color = switch (options.color) {
@@ -113,6 +113,7 @@ pub fn initRootLogger(alloc: std.mem.Allocator, io: std.Io, options: Options) !*
     log_handler.* = LogHandler{
         .output = output,
         .formatter = frm,
+        .io = io,
     };
     return Logger.init(options.root_logger_name, spec, log_handler, alloc, io);
 }

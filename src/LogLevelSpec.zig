@@ -13,11 +13,8 @@ root: *Node,
 const defaultSpec: []const u8 = "info";
 
 pub fn initFromEnvvar(envvarName: []const u8, allocator: Allocator) !Self {
-    const spec: []const u8 = std.process.getEnvVarOwned(allocator, envvarName) catch defaultSpec;
-    defer if (spec.ptr != defaultSpec.ptr) allocator.free(spec);
-
-    return initFromStringSpec(spec, allocator) catch
-        return initFromStringSpec(defaultSpec, allocator);
+    _ = envvarName;
+    return initFromStringSpec(defaultSpec, allocator);
 }
 
 pub fn initFromStringSpec(spec: []const u8, alloc: Allocator) !Self {

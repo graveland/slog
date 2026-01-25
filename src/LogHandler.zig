@@ -11,6 +11,7 @@ const Self = @This();
 
 output: Output,
 formatter: Formatter,
+io: std.Io,
 mutex: std.Thread.Mutex = .{},
 
 pub fn deinit(self: *Self) void {
@@ -24,7 +25,7 @@ pub fn handle(self: *Self, event: *const LogEvent) !void {
     var buf: [4096]u8 = undefined;
     switch (self.output) {
         .file => |f| {
-            var w = f.writer(&buf);
+            var w = f.writer(self.io, &buf);
             try self.formatter.format(&w.interface, event);
             try w.interface.flush();
         },

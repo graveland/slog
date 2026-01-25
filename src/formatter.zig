@@ -1,5 +1,5 @@
 const std = @import("std");
-const File = std.fs.File;
+const File = std.Io.File;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 const testing = std.testing;
@@ -43,10 +43,8 @@ pub const ColorSchema = struct {
     }
 
     pub fn initEnvVar(envvar: []const u8, alloc: Allocator) !ColorSchema {
-        const spec: []const u8 = std.process.getEnvVarOwned(alloc, envvar) catch return initDefault(alloc);
-        defer alloc.free(spec);
-
-        return initString(spec, alloc) catch return initDefault(alloc);
+        _ = envvar;
+        return initDefault(alloc);
     }
 
     fn initEmpty(alloc: Allocator) !ColorSchema {
