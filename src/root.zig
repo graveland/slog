@@ -90,7 +90,7 @@ pub fn initRootLogger(alloc: std.mem.Allocator, io: std.Io, options: Options) !*
                 .always => true,
                 .never => false,
                 .auto => switch (output) {
-                    .file => |f| std.posix.isatty(f.handle),
+                    .file => |f| f.isTty(io) catch false,
                     .writer => false,
                 },
             };
