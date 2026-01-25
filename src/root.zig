@@ -32,7 +32,7 @@ pub const SpecSource = union(enum) {
 
 /// Log output type.
 pub const Output = union(enum) {
-    file: std.fs.File,
+    file: std.Io.File,
     writer: *std.Io.Writer,
 };
 // pub const Output = if (builtin.is_test) std.Io.Writer.Allocating else std.fs.File;
