@@ -2,11 +2,11 @@
     .name = .slog,
     .version = "0.2.0",
     .fingerprint = 0x28b061b996bfa9d6, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.16.0-dev.2296+fd3657bf8",
+    .minimum_zig_version = "0.16.0-dev.2676+4e2cec265",
     .dependencies = .{
         .zeit = .{
-            .url = "git+https://github.com/graveland/zeit.git#af8db9849b1505c12409da09b080411fbd03e157",
-            .hash = "zeit-0.7.0-n3SAEX0GAwDlCV3ZOOCTZ1_z0XdYJ6wbf3GWM4PYz8KM",
+            .url = "git+https://github.com/graveland/zeit.git#5935f814518a31f4019db9ffc55629067885a1ee",
+            .hash = "zeit-0.7.0-n3SAEQIGAwB3m66HJvYI1gOP8CJqCcmEXqTW1Zpl3pef",
         },
     },
     .paths = .{

@@ -15,7 +15,7 @@ const TestingLogger = struct {
         var al = try testing.allocator.create(Writer.Allocating);
         al.* = Writer.Allocating.init(testing.allocator);
 
-        var threaded = std.Io.Threaded.init(testing.allocator);
+        var threaded = std.Io.Threaded.init(testing.allocator, .{});
         const io = threaded.io();
 
         var opt = options;

@@ -34,7 +34,7 @@ pub fn main() !void {
     defer _ = gpa_impl.deinit();
     const gpa = gpa_impl.allocator();
 
-    var threaded = std.Io.Threaded.init(gpa);
+    var threaded = std.Io.Threaded.init(gpa, .{});
     defer threaded.deinit();
     const io = threaded.io();
 
@@ -50,9 +50,10 @@ pub fn main() !void {
     benchDebugFiltered(logger);
 
     // Timed run
-    var timer = std.time.Timer.start() catch @panic("no timer");
+    const start = std.Io.Clock.awake.now(io);
     benchDebugFiltered(logger);
-    const elapsed_ns = timer.read();
+    const elapsed = start.durationTo(std.Io.Clock.awake.now(io));
+    const elapsed_ns: u64 = @intCast(elapsed.nanoseconds);
 
     std.debug.print("benchDebugFiltered: {d}ms ({d}ns/iter)\n", .{
         elapsed_ns / 1_000_000,

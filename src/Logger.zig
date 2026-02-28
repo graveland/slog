@@ -24,7 +24,7 @@ constant_fields: ?[]Field = null,
 dispatcher: EventDispatcher,
 parent: ?*Self,
 kids: std.ArrayList(*Self),
-kids_mutex: std.Thread.Mutex = .{},
+kids_mutex: std.Io.Mutex = .init,
 is_root: bool,
 
 timezone: *TimeZone,
@@ -71,9 +71,9 @@ pub fn deinit(self: *Self) void {
     // Clear parent pointers before iterating to prevent kids from trying to
     // remove themselves from our list during cleanup (iterator invalidation).
     // Hold the lock while clearing parent pointers to prevent races with initChildLogger.
-    self.kids_mutex.lock();
+    self.kids_mutex.lockUncancelable(self.io);
     for (self.kids.items) |kid| kid.parent = null;
-    self.kids_mutex.unlock();
+    self.kids_mutex.unlock(self.io);
     for (self.kids.items) |kid| kid.deinit();
     self.kids.deinit(self.allocator);
 
@@ -145,15 +145,15 @@ pub fn initChildLogger(self: *Self, name: []const u8) !*Self {
         .is_root = false,
         .timezone = self.timezone,
     };
-    self.kids_mutex.lock();
-    defer self.kids_mutex.unlock();
+    self.kids_mutex.lockUncancelable(self.io);
+    defer self.kids_mutex.unlock(self.io);
     try self.kids.append(self.allocator, kid);
     return kid;
 }
 
 fn removeKid(self: *Self, kid_ptr: *const Self) void {
-    self.kids_mutex.lock();
-    defer self.kids_mutex.unlock();
+    self.kids_mutex.lockUncancelable(self.io);
+    defer self.kids_mutex.unlock(self.io);
     var kids_index: ?usize = null;
     for (self.kids.items, 0..) |kid, ix| {
         if (kid == kid_ptr) {

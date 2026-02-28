@@ -2,7 +2,7 @@ const std = @import("std");
 const slog = @import("slog");
 
 pub fn main() !void {
-    var threaded = std.Io.Threaded.init(std.heap.page_allocator);
+    var threaded = std.Io.Threaded.init(std.heap.page_allocator, .{});
     defer threaded.deinit();
     const io = threaded.io();
 

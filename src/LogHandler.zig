@@ -12,15 +12,15 @@ const Self = @This();
 output: Output,
 formatter: Formatter,
 io: std.Io,
-mutex: std.Thread.Mutex = .{},
+mutex: std.Io.Mutex = .init,
 
 pub fn deinit(self: *Self) void {
     self.formatter.deinit();
 }
 
 pub fn handle(self: *Self, event: *const LogEvent) !void {
-    self.mutex.lock();
-    defer self.mutex.unlock();
+    self.mutex.lockUncancelable(self.io);
+    defer self.mutex.unlock(self.io);
 
     var buf: [4096]u8 = undefined;
     switch (self.output) {
